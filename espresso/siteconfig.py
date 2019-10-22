@@ -135,8 +135,12 @@ class SiteConfig(with_metaclass(Singleton, object)):
             exitcode = call('ps aux | grep pbs | grep -v grep', shell=True,
                             stderr=devnull)
             if exitcode == 0:
-                scheduler = 'PBS'
-
+                # rifle through the environment variables to see if you
+                # find any PBS variables
+                for var in os.environ:
+                    if 'PBS' in var:
+                        scheduler = 'PBS'
+                    
         return cls(scheduler)
 
     def set_interactive(self):
@@ -235,7 +239,9 @@ class SiteConfig(with_metaclass(Singleton, object)):
         if workdir is None or len(workdir) == 0:
             self.localtmp = self.submitdir.joinpath('qe_' + str(self.jobid))
         else:
-            self.localtmp = self.submitdir.joinpath(workdir + '_' + str(self.jobid))
+            # changed behavior to make more sense for Fireworks runs
+            self.localtmp = Path(os.getcwd()).joinpath(workdir)
+            #self.localtmp = self.submitdir.joinpath(workdir + '_' + str(self.jobid))
 
         self.localtmp.makedirs_p()
         return self.localtmp.abspath()
@@ -270,7 +276,11 @@ class SiteConfig(with_metaclass(Singleton, object)):
     def get_host_mpi_command(self, program, aslist=True):
         'Return a command as list to execute `program` through MPI per host'
 
-        command = 'mpirun -host {} '.format(','.join(self.nodelist)) +\
+        if self.scheduler == 'pbs':
+            command = ' '.join(self.perHostMpiExec)
+            command += ' {}'.format(program)
+        else: 
+            command = 'mpirun -host {} '.format(','.join(self.nodelist)) +\
                   '-np {0:d} {1:s}'.format(self.nnodes, program)
 
         if aslist:

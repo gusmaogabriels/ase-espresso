@@ -25,7 +25,10 @@ import subprocess
 import numpy as np
 from collections import OrderedDict
 from io import open
-from path import Path
+try:
+    from path import Path
+except:
+    from pypath import Path
 import logging
 
 import pexpect
@@ -503,6 +506,7 @@ class Espresso(FileIOCalculator, object):
                  wmass=None,
                  press_conv_thr=None,
                  site=None,
+                 force_consistent=False
                  ):
 
         self.pw = pw
@@ -674,6 +678,163 @@ class Espresso(FileIOCalculator, object):
         self.w_2 = w_2
         self.wmass = wmass
         self.press_conv_thr = press_conv_thr
+        self.force_consistent = force_consistent
+        self.defaults = dict(atoms=None,
+                 pw=350.0,
+                 dw=None,
+                 fw=None,
+                 nbands=-10,
+                 kpts=(1, 1, 1),
+                 kptshift=(0, 0, 0),
+                 fft_grid=None,
+                 calculation='relax',
+                 ion_dynamics='ase3',
+                 nstep=None,
+                 constr_tol=None,
+                 fmax=0.05,
+                 cell_dynamics=None,
+                 press=None,
+                 dpress=None,
+                 cell_factor=None,
+                 cell_dofree=None,
+                 dontcalcforces=False,
+                 nosym=False,
+                 noinv=False,
+                 nosym_evc=False,
+                 no_t_rev=False,
+                 xc='PBE',
+                 beefensemble=False,
+                 printensemble=False,
+                 psppath=None,
+                 spinpol=False,
+                 noncollinear=False,
+                 spinorbit=False,
+                 outdir=None,
+                 txt=None,
+                 calcstress=False,
+                 smearing='fd',
+                 sigma=0.1,
+                 fix_magmom=False,
+                 isolated=None,
+                 U=None,
+                 J=None,
+                 U_alpha=None,
+                 U_projection_type='atomic',
+                 nqx1=None,
+                 nqx2=None,
+                 nqx3=None,
+                 exx_fraction=None,
+                 screening_parameter=None,
+                 exxdiv_treatment=None,
+                 ecutvcut=None,
+                 tot_magnetization=-1,
+                 occupations='smearing',
+                 dipole={'status': False},
+                 field={'status': False},
+                 output={'disk_io': 'default',
+                         'avoidio': False,
+                         'removewf': True,
+                         'removesave': False,
+                         'wf_collect': False},
+                 convergence={'energy': 1e-6,
+                              'mixing': 0.7,
+                              'maxsteps': 100,
+                              'diag': 'david'},
+                 startingpot=None,
+                 startingwfc=None,
+                 ion_positions=None,
+                 parflags=None,
+                 newforcearray=True,
+                 verbose='low',
+                 # automatically generated list of parameters
+                 # some coincide with ase-style names
+                 iprint=None,
+                 tstress=None,
+                 tprnfor=None,
+                 dt=None,
+                 lkpoint_dir=None,
+                 max_seconds=None,
+                 etot_conv_thr=None,
+                 forc_conv_thr=None,
+                 tefield=None,
+                 dipfield=None,
+                 lelfield=None,
+                 nberrycyc=None,
+                 lorbm=None,
+                 lberry=None,
+                 gdir=None,
+                 nppstr=None,
+                 nbnd=None,
+                 ecutwfc=None,
+                 ecutrho=None,
+                 ecutfock=None,
+                 force_symmorphic=None,
+                 use_all_frac=None,
+                 one_atom_occupations=None,
+                 starting_spin_angle=None,
+                 degauss=None,
+                 nspin=None,
+                 ecfixed=None,
+                 qcutz=None,
+                 q2sigma=None,
+                 x_gamma_extrapolation=None,
+                 lda_plus_u=None,
+                 lda_plus_u_kind=None,
+                 edir=None,
+                 emaxpos=None,
+                 eopreg=None,
+                 eamp=None,
+                 clambda=None,
+                 report=None,
+                 lspinorb=None,
+                 esm_w=None,
+                 esm_efield=None,
+                 esm_nfit=None,
+                 london=None,
+                 london_s6=None,
+                 london_rcut=None,
+                 xdm=None,
+                 xdm_a1=None,
+                 xdm_a2=None,
+                 electron_maxstep=None,
+                 scf_must_converge=None,
+                 conv_thr=None,
+                 adaptive_thr=None,
+                 conv_thr_init=None,
+                 conv_thr_multi=None,
+                 mixing_beta=None,
+                 mixing_ndim=None,
+                 mixing_fixed_ns=None,
+                 ortho_para=None,
+                 diago_thr_init=None,
+                 diago_cg_maxiter=None,
+                 diago_david_ndim=None,
+                 diago_full_acc=None,
+                 efield=None,
+                 tqr=None,
+                 remove_rigid_rot=None,
+                 tempw=None,
+                 tolp=None,
+                 delta_t=None,
+                 nraise=None,
+                 refold_pos=None,
+                 upscale=None,
+                 bfgs_ndim=None,
+                 trust_radius_max=None,
+                 trust_radius_min=None,
+                 trust_radius_ini=None,
+                 w_1=None,
+                 w_2=None,
+                 wmass=None,
+                 press_conv_thr=None,
+                 site=None,
+                 force_consistent=False,)
+
+        if charge is None:
+            self.defaults['tot_charge'] = tot_charge
+        else:
+            self.defaults['tot_charge'] = charge
+
 
         # internal attributes
 
@@ -917,6 +1078,7 @@ class Espresso(FileIOCalculator, object):
         Create the necessary directory structure to run the calculation and
         assign file names
         '''
+
 
         self.localtmp = self.site.make_localtmp(self.outdir)
         self.scratch = self.site.make_scratch()
@@ -1245,7 +1407,7 @@ class Espresso(FileIOCalculator, object):
             raise ValueError('no atoms defined')
 
         fname = self.localtmp.joinpath(inputname)
-
+        
         finp = open(fname, 'w')
 
         # &CONTROL
@@ -2185,9 +2347,13 @@ class Espresso(FileIOCalculator, object):
 
         return atoms
 
-    def get_potential_energy(self, atoms=None, force_consistent=False):
+    def get_potential_energy(self, atoms=None, 
+                             force_consistent=False
+                             #force_consistent=True
+                             ):
         self.update(atoms)
-        if force_consistent:
+            
+        if force_consistent or self.force_consistent:
             return self.energy_free
         else:
             return self.energy_zero
@@ -3468,6 +3634,197 @@ class Espresso(FileIOCalculator, object):
         except:
             pass
 
+    def get_espresso_runtime(self):
+        """
+        reads the walltime from the espresso output file
+        """
+        import time
+        self.stop()
+        time.sleep(0.5)
+        p = open(self.log,'r')
+        s = p.readlines()[-8]
+        p.close()
+        #try:
+        tmp = s.split('CPU')[1]
+        tmp = tmp.split('WALL')[0].strip()
+        return tmp
+        #except:
+        #    return None
+        """
+        self.stop()
+        p = os.popen('grep -a "PWSCF" '+'log'+' | tail -1', 'r')
+        s = p.readlines()
+        p.close()
+        #try:
+        tmp = s[0].split('CPU')
+        print(tmp)
+        return tmp[1].split(' WALL')[0].strip()
+        #except:
+        #    return None
+        """
+
+    def todict(self,only_nondefaults=True,identifier=None):
+        """
+        Coverts calculator object into a dictionary representation appropriate to be placed
+        in a MongoDB. By default this returns only the settings that are not the default values.
+        This function is based loosely off the todict function from the Kitchen Group's VASP
+        environment. in modifying this function please attempt to conform to the naming 
+        conventions found there:
+        https://github.com/jkitchin/vasp/blob/master/vasp/vasp_core.py
+
+        only_nondefaults: bool
+            If set to True, only the non-default keyword arguments are returned. If False all
+            key word arguements are returned
+        """
+        from collections import OrderedDict
+        import getpass
+        dict_version = OrderedDict()
+        for item in self.defaults.keys():
+            if type(getattr(self,item)) == dict:
+                dict_version[item] = OrderedDict(getattr(self, item))
+            else:
+                dict_version[item] = getattr(self, item)
+        dict_version['path'] = os.path.abspath('.').split(os.sep)[1:]
+        if self.results == {}:
+            return dict_version
+        #if self.beefensemble == True and self.printensemble == True:
+        #    dict_version['beefensemble'] = self.get_beef_ensemble()
+        for prop in self.implemented_properties:
+            val = self.results.get(prop, None)
+            dict_version[prop] = val
+        f = self.results.get('forces', None)
+        if f is not None:
+            dict_version['fmax'] = max(np.abs(f.flatten()))
+
+        s = self.results.get('stress', None)
+        if s is not None:
+            dict_version['smax'] = max(np.abs(s.flatten()))
+
+        dict_version['nvalence'] = sum(self.get_nvalence()[0])
+
+        dict_version['SCF-steps'] = self.get_number_of_scf_steps()
+        dict_version['version'] = self.get_espresso_version()
+        try:
+            dict_version['psp_path'] = os.environ['ESP_PSP_PATH']
+        except:
+            pass
+        time = self.get_espresso_runtime()
+
+        # convert time from a string to the number of seconds
+        if time is not None:
+            if 'h' in time:
+                hours, minutes = time.split('h')
+                time = 3600 * float(hours) + 60 * float(minutes[:-1])
+            elif 'm' in time:
+                minutes, seconds = time.split('m')
+                time = 60 * float(minutes) + float(seconds[:-1])
+            elif time is not None:
+                time = float(time[:-1])
+
+        if time is not None:
+            dict_version['elapsed-time'] = time
+        dict_version['name'] = 'espresso'
+        if 'parflags' in dict_version:  # We don't care about this
+            del dict_version['parflags']
+        for item in ['xc','pw','dw','spinpol']: # These should always be in
+            dict_version[item] = getattr(self, item)
+        """
+        for item in dict_version:
+            if type(dict_version[item]) not in \
+            [dict, list, str, float, int, None, tuple] and \
+            dict_version[item] is not None:  # converting numpy arrays to lists
+                try:
+                    dict_version[item] = dict_version[item].tolist()
+                except:
+                    pass
+        """
+        for item in dict_version:
+            if type(dict_version[item]) not in \
+            [dict, list, str, float, int, None, tuple] and \
+            dict_version[item] is not None:  # converting numpy arrays to lists
+                try:
+                    dict_version[item] = dict_version[item].tolist()
+                except:
+                    pass
+            if item == 'results':
+                for key,res in dict_version[item].items():
+                    try:
+                        dict_version[item][key] = res.tolist()
+                    except:
+                        pass
+        if identifier is not None:
+            dict_version['identifier'] = identifier
+        
+        # Stuff we don't want
+        del dict_version['atoms']
+        del dict_version['site']
+        return dict_version
+
+    def get_espresso_version(self):
+        """
+        reads the espresso version from the espresso output file
+        """
+        p = os.popen('grep -a "Program PWSCF" '+self.log+' | tail -1', 'r')
+        s = p.readlines()
+        p.close()
+        tmp = s[0].split('PWSCF ')
+        return tmp[1].split(' starts')[0]
+
+    def get_espresso_runtime(self):
+        """
+        reads the walltime from the espresso output file
+        """
+        try:
+            import time
+            time.sleep(0.5)
+            p = open(self.log,'r')
+            s = p.readlines()[-8]
+            p.close()
+            #try:
+            tmp = s.split('CPU')[1]
+            tmp = tmp.split('WALL')[0].strip()
+            return tmp
+        except:
+            return None
+        """
+        self.stop()
+        p = os.popen('grep -a "PWSCF" '+'log'+' | tail -1', 'r')
+        s = p.readlines()
+        p.close()
+        #try:
+        tmp = s[0].split('CPU')
+        print(tmp)
+        return tmp[1].split(' WALL')[0].strip()
+        #except:
+        #  return None
+        """ 
+
+    def calc_to_database(self,
+                 host='localhost',
+                 port=27017,
+                 database='atoms',
+                 collection='atoms',
+                 user=None,
+                 password=None):
+        """
+        Adds the current calculaton to a mongo database
+        """
+        from espresso.mongo import mongo_doc, MongoDatabase
+
+        db = MongoDatabase(
+                 host=host,
+                 port=port,
+                 database=database,
+                 collection=collection,
+                 user=user,
+                 password=password)
+        atoms = self.atoms  # the atoms object in the calc does not have a calc
+        atoms.set_calculator(self)
+        id_ = db.write(mongo_doc(atoms))
+        return id_
+
+
+
 
 class iEspresso(Espresso):
 
@@ -3605,3 +3962,8 @@ class iEspresso(Espresso):
             self.child.send('Q\n')
 
         self.child.logfile.close()
+    
+    def todict(self):
+        return Espresso.todict(self)
+
+espresso = iEspresso
