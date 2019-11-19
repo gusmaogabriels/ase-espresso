@@ -3889,7 +3889,7 @@ class iEspresso(Espresso):
                     self.child.logfile.write(self.get_output_header().encode('utf-8'))
 
                     try:
-                        i = self.child.expect(['!ASE\s*\n(.*\n){4}',
+                        i = self.child.expect(['!ASE\s*\n(.*\n){2}',
                             '     convergence NOT', '     stopping'],
                                               timeout=self.timeout)
                         if i == 1:
