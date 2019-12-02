@@ -3907,7 +3907,7 @@ class iEspresso(Espresso):
                         self.child.send('{0:25.14e} {1:25.14e} {2:25.10e}\n'.format(atom.x, atom.y, atom.z))
 
                     try:
-                        i = self.child.expect(['!ASE\s*\n(.*\n){4}',
+                        i = self.child.expect(['!ASE\s*\n(.*\n){2}',
                                                '     convergence NOT',
                                                '     stopping'],
                                               timeout=self.timeout)
