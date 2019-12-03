@@ -3890,7 +3890,7 @@ class iEspresso(Espresso):
 
                     try:
                         i = self.child.expect(['!ASE\s*\n(.*\n){2}',
-                            '     convergence NOT', '     stopping'],
+                            'convergence NOT', 'stopping'],
                                               timeout=self.timeout)
                         if i == 1:
                             raise SCFMaxIterationsError()
@@ -3901,15 +3901,13 @@ class iEspresso(Espresso):
                         print(str(self.child))
 
                 else:  # QE process is already spawned
-
                     self.child.send('C\n')
                     for atom in self.atoms:
                         self.child.send('{0:25.14e} {1:25.14e} {2:25.10e}\n'.format(atom.x, atom.y, atom.z))
-
                     try:
                         i = self.child.expect(['!ASE\s*\n(.*\n){2}',
-                                               '     convergence NOT',
-                                               '     stopping'],
+                                               'convergence NOT',
+                                               'stopping'],
                                               timeout=self.timeout)
                         if i == 1:
                             raise SCFMaxIterationsError()
@@ -3918,6 +3916,8 @@ class iEspresso(Espresso):
                     except:
                         print('# Exception was thrown by pexpect.expect')
                         print(str(self.child))
+                        self.child.logfile.flush()
+                        self.stop()
                     self.child.logfile.flush()
 
             else:  # calculation == 'hund'
@@ -3939,7 +3939,7 @@ class iEspresso(Espresso):
                 self.child.logfile = self.logfile
                 self.child.logfile.write(self.get_output_header().encode('utf-8'))
                 try:
-                    i = self.child.expect(['!ASE', '     convergence NOT', '     stopping'],
+                    i = self.child.expect(['!ASE', 'convergence NOT', 'stopping'],
                                           timeout=self.timeout)
                     if i == 1:
                         raise SCFMaxIterationsError()
@@ -3948,6 +3948,8 @@ class iEspresso(Espresso):
                 except:
                     print('# Exception was thrown by pexpect.expect')
                     print(str(self.child))
+                    self.child.logfile.flush()
+                    self.stop()
 
             else:  # QE process is already spawned
 
