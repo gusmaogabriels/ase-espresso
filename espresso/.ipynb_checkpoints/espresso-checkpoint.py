@@ -3848,11 +3848,11 @@ class iEspresso(SocketIOCalculator):
             from ase.constraints import full_3x3_to_voigt_6_stress
             vol = atoms.get_volume()
             results['stress'] = -full_3x3_to_voigt_6_stress(virial) / vol
-        self.results.update(results
- 
+        self.results.update(results)
     
     def todict(self):
         return Espresso.todict(self)
+
 
 espresso = Espresso
 iespresso = iEspresso
