@@ -3795,11 +3795,11 @@ class iEspresso(SocketIOCalculator):
             exception is thrown, defaults to 1800 s
     '''
 
-    def __init__(self, port=None,
+    def __init__(self, atoms=None,port=None,
                  unixsocket=None, timeout=None, 
                  log=None, *args, **kwargs):
 
-        super().__init__(Espresso(*args, **kwargs),port=port,unixsocket=unixsocket,timeout=timeout,log=log)
+        super().__init__(Espresso(*[atoms]+args, **kwargs),port=port,unixsocket=unixsocket,timeout=timeout,log=log)
 
     def calculate(self, atoms=None, properties=['energy'],
                   system_changes=all_changes):
