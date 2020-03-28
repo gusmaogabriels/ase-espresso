@@ -859,7 +859,7 @@ class Espresso(FileIOCalculator, object):
             self.pw = ecutwfc
         if ecutrho is not None:
             self.dw = ecutwfc
-        if nbnd is not None:comma
+        if nbnd is not None:
             self.nbands = nbnd
 
         self.site = site
