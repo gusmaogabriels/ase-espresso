@@ -71,8 +71,6 @@ def convert_constraints(atoms):
             elif isinstance(c, constraints.FixBondLengths):
                 for d in c.constraints:
                     otherconstr.append("'distance' %d %d" % (d.indices[0]+1,d.indices[1]+1))
-            elif isinstance(c, constraints.FixBondLength):
-                otherconstr.append("'distance' %d %d" % (c.indices[0]+1,c.indices[1]+1))
             elif isinstance(c, constraints.FixInternals):
             # we ignore the epsilon in FixInternals because there can only be one global
             # epsilon be defined in espresso for all constraints

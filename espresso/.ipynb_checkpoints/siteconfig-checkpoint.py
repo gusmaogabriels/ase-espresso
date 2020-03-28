@@ -299,9 +299,6 @@ class SiteConfig(with_metaclass(Singleton, object)):
         else:
             command = 'mpirun -wdir {0:s} {1:s}'.format(workdir, program)
             # should be logged print('Not Using hostfile', self.get_hostfile())
-        
-        #### TEST ####
-        command = "mpirun -rmk pbs -wdir {0:s} {1:s}".format(workdir, program)
 
         if aslist:
             return shlex.split(command)
