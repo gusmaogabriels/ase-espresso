@@ -3821,7 +3821,7 @@ class iEspresso(SocketIOCalculator):
         self.check_spinpol()
         self._initialized = True
 
-        def calculate(self, atoms=None, properties=['energy'],
+    def calculate(self, atoms=None, properties=['energy'],
                   system_changes=all_changes):
         bad = [change for change in system_changes
                if change not in self.supported_changes]
