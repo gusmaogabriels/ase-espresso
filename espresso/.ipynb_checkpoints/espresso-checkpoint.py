@@ -3801,26 +3801,6 @@ class iEspresso(SocketIOCalculator):
 
         super().__init__(Espresso(*args, **kwargs),port=port,unixsocket=unixsocket,timeout=timeout,log=log)
 
-    def initialize(self, atoms):
-        '''
-        Create the scratch directories and pw.inp input file and
-        prepare for writing the input file
-        '''
-
-        if not self._initialized:
-            self.create_outdir()
-            self.logfile = open(self.log, 'ab')
-            if self.site.usehostfile:
-                self.site.write_local_hostfile()
-
-        self.set_pseudo_path()
-        self.atoms = atoms.copy()
-        self.natoms = len(self.atoms)
-        self.atoms2species()
-
-        self.check_spinpol()
-        self._initialized = True
-
     def calculate(self, atoms=None, properties=['energy'],
                   system_changes=all_changes):
         bad = [change for change in system_changes
