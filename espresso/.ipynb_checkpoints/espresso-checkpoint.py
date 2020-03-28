@@ -3821,6 +3821,34 @@ class iEspresso(SocketIOCalculator):
         self.check_spinpol()
         self._initialized = True
 
+        def calculate(self, atoms=None, properties=['energy'],
+                  system_changes=all_changes):
+        bad = [change for change in system_changes
+               if change not in self.supported_changes]
+
+        if self.calculator_initialized and any(bad):
+            raise PropertyNotImplementedError(
+                'Cannot change {} through IPI protocol.  '
+                'Please create new socket calculator.'
+                .format(bad if len(bad) > 1 else bad[0]))
+
+        self.calculator_initialized = True
+
+        if self.server is None:
+            assert self.calc is not None
+            #cmd = self.calc.command.replace('PREFIX', self.calc.prefix)
+            self.calc.write_input(atoms, properties=properties,
+                                  system_changes=system_changes)
+            self.launch_server(cmd)
+
+        self.atoms = atoms.copy()
+        results = self.server.calculate(atoms)
+        virial = results.pop('virial')
+        if self.atoms.number_of_lattice_vectors == 3 and any(self.atoms.pbc):
+            from ase.constraints import full_3x3_to_voigt_6_stress
+            vol = atoms.get_volume()
+            results['stress'] = -full_3x3_to_voigt_6_stress(virial) / vol
+        self.results.update(results
  
     
     def todict(self):
