@@ -3797,7 +3797,7 @@ class iEspresso(SocketIOCalculator):
 
     def __init__(self, calc=None, port=None,
                  unixsocket=None, timeout=None, 
-                 log=None timeout=1800, *args, **kwargs):
+                 log=None, *args, **kwargs):
 
         super().__init__(Espresso(*args, **kwargs))
 
