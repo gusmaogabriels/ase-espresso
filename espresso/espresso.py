@@ -964,7 +964,7 @@ class Espresso(FileIOCalculator, object):
                 self.site.write_local_hostfile()
                 
         self.command = self.site.get_proc_mpi_command(self.scratch,
-                                'pw.x ' + self.parflags + ' -in pw.inp')
+                                'pw.x ' + self.parflags + ' -in {0}/pw.inp >> {0}/pw.out'.format(self.localtmp))
 
         self.set_pseudo_path()
         self.atoms = atoms.copy()
