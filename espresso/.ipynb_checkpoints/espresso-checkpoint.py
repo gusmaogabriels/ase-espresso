@@ -996,7 +996,7 @@ class Espresso(FileIOCalculator, object):
         if errorcode:
             path = os.path.abspath(self.localtmp)
             msg = ('Calculator "{}" failed with command "{}" failed in '
-                   '{} with error code {}'.format(self.name, command,
+                   '{} with error code {}'.format(self.name, self.command,
                                                   path, errorcode))
             raise CalculationFailed(msg)
         self.read()
