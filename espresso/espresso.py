@@ -874,13 +874,10 @@ class Espresso(FileIOCalculator, object):
         if atoms is not None:
             atoms.set_calculator(self)
         
-        self.initialize(self.atoms)
+        #self.initialize(self.atoms)
         #self.prefix = 'qe_'+str(self.site.jobid)
         #self.command = 'mpirun -envall -rmk pbs pw.x -in pw.inp --ipi {unixsocket}:UNIX > pw.out'\
         #                 .format(unixsocket=self.unixsocket)
-
-        self.command = self.site.get_proc_mpi_command(self.scratch,
-                                'pw.x ' + self.parflags + ' -in pw.inp')
         
         self.parameters = dict()
         
@@ -965,6 +962,9 @@ class Espresso(FileIOCalculator, object):
             self.logfile = open(self.log, 'ab')
             if self.site.usehostfile:
                 self.site.write_local_hostfile()
+                
+        self.command = self.site.get_proc_mpi_command(self.scratch,
+                                'pw.x ' + self.parflags + ' -in pw.inp')
 
         self.set_pseudo_path()
         self.atoms = atoms.copy()
@@ -973,7 +973,7 @@ class Espresso(FileIOCalculator, object):
 
         self.check_spinpol()
         self._initialized = True
-    """
+
     def calculate(self, atoms=None, properties=['energy']):
                     
         if not self._initialized:
@@ -1002,7 +1002,7 @@ class Espresso(FileIOCalculator, object):
         self.read()
         self.read_results()
         self.set_results(atoms)
-    """
+
     
     def set_atoms(self, atoms):
 
@@ -3820,9 +3820,9 @@ class iEspresso(SocketIOCalculator):
 
         if self.server is None:
             assert self.calc is not None
-            cmd = self.calc.command  + ' --ipi {}:UNIX > pw.out'.format(self.unixsocket)
             self.calc.write_input(atoms, properties=properties,
                                   system_changes=system_changes)
+            cmd = self.calc.command  + ' --ipi {}:UNIX > pw.out'.format(self.unixsocket)
             self.launch_server(cmd)
 
         self.atoms = atoms.copy()
