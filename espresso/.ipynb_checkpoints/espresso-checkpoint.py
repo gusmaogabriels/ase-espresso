@@ -966,7 +966,6 @@ class Espresso(FileIOCalculator, object):
         self.command = self.site.get_proc_mpi_command(self.scratch,
                                 'pw.x ' + self.parflags + ' -in {0}/pw.inp'.format(self.localtmp))
         self.command =  [self.command[0]]+['--allow-run-as-root']+self.command[1:]
-        self.command = ['pw.x -in {0}/pw.inp'.format(self.localtmp)]
 
         self.set_pseudo_path()
         self.atoms = atoms.copy()
@@ -3824,6 +3823,8 @@ class iEspresso(SocketIOCalculator):
             assert self.calc is not None
             self.calc.write_input(atoms, properties=properties,
                                   system_changes=system_changes)
+            if not self._unixsocket:
+                self._unixsocket = self.calc.localtmp.split('/')[-1]
             cmd = ' '.join(self.calc.command)  + ' --ipi {0}:UNIX >> {1}/pw.out'.format(self._unixsocket,self.calc.localtmp)
             self.launch_server(cmd)
 
