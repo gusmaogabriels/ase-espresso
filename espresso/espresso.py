@@ -981,7 +981,7 @@ class Espresso(FileIOCalculator, object):
         if not self._initialized:
             self.initialize(atoms)
         
-        command = ' '.join(self.command)
+        command = ' '.join(self.command+['>> {}'.format(self.log)])
         
         try:
             proc = subprocess.Popen(command, shell=True, cwd=self.localtmp)
