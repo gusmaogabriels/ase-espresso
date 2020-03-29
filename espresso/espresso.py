@@ -3799,7 +3799,7 @@ class iEspresso(SocketIOCalculator):
                  unixsocket=None, timeout=None, 
                  log=None, *args, **kwargs):
 
-        super().__init__(Espresso(*[atoms]+args, **kwargs),port=port,unixsocket=unixsocket,timeout=timeout,log=log)
+        super().__init__(Espresso(atoms,*args, **kwargs),port=port,unixsocket=unixsocket,timeout=timeout,log=log)
 
     def calculate(self, atoms=None, properties=['energy'],
                   system_changes=all_changes):
