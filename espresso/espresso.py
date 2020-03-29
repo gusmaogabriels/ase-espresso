@@ -1005,6 +1005,7 @@ class Espresso(FileIOCalculator, object):
         self.read()
 
         self.set_results(atoms)
+        print(self.results)
 
     
     def set_atoms(self, atoms):
