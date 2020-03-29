@@ -3822,7 +3822,7 @@ class iEspresso(SocketIOCalculator):
             assert self.calc is not None
             self.calc.write_input(atoms, properties=properties,
                                   system_changes=system_changes)
-            cmd = self.calc.command  + ' --ipi {}:UNIX > pw.out'.format(self._unixsocket)
+            cmd = ' '.join(self.calc.command)  + ' --ipi {}:UNIX > pw.out'.format(self._unixsocket)
             self.launch_server(cmd)
 
         self.atoms = atoms.copy()
