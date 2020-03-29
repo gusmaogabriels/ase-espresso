@@ -966,6 +966,7 @@ class Espresso(FileIOCalculator, object):
         self.command = self.site.get_proc_mpi_command(self.scratch,
                                 'pw.x ' + self.parflags + ' -in {0}/pw.inp'.format(self.localtmp))
         self.command =  [self.command[0]]+['--allow-run-as-root']+self.command[1:]
+        self.command = 'pw.x -in {0}/pw.inp'.format(self.localtmp)
 
         self.set_pseudo_path()
         self.atoms = atoms.copy()
@@ -983,7 +984,7 @@ class Espresso(FileIOCalculator, object):
         self.write_input()
             
         try:
-            proc = subprocess.Popen(command, shell=True, cwd=self.localtmp)
+            proc = subprocess.Popen(self.command, shell=True, cwd=self.localtmp)
         except OSError as err:
             # Actually this may never happen with shell=True, since
             # probably the shell launches successfully.  But we soon want
