@@ -874,7 +874,7 @@ class Espresso(FileIOCalculator, object):
         if atoms is not None:
             atoms.set_calculator(self)
         
-        self.initialize(self.atoms)
+        #self.initialize(self.atoms)
         #self.prefix = 'qe_'+str(self.site.jobid)
         #self.command = 'mpirun -envall -rmk pbs pw.x -in pw.inp --ipi {unixsocket}:UNIX > pw.out'\
         #                 .format(unixsocket=self.unixsocket)
@@ -970,7 +970,7 @@ class Espresso(FileIOCalculator, object):
 
         self.check_spinpol()
         self._initialized = True
-
+    """
     def calculate(self, atoms=None, properties=['energy']):
                     
         if not self._initialized:
@@ -999,7 +999,8 @@ class Espresso(FileIOCalculator, object):
         self.read()
         self.read_results()
         self.set_results(atoms)
-  
+    """
+    
     def set_atoms(self, atoms):
 
         if self.atoms is None or not self.started:

@@ -874,7 +874,7 @@ class Espresso(FileIOCalculator, object):
         if atoms is not None:
             atoms.set_calculator(self)
         
-        self.initialize(self.atoms)
+        #self.initialize(self.atoms)
         #self.prefix = 'qe_'+str(self.site.jobid)
         #self.command = 'mpirun -envall -rmk pbs pw.x -in pw.inp --ipi {unixsocket}:UNIX > pw.out'\
         #                 .format(unixsocket=self.unixsocket)
