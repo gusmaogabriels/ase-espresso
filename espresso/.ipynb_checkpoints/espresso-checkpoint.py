@@ -3808,34 +3808,38 @@ class iEspresso(SocketIOCalculator):
 
     def calculate(self, atoms=None, properties=['energy'],
                   system_changes=all_changes):
-        bad = [change for change in system_changes
-               if change not in self.supported_changes]
+        
+        if self.calc.ion_dynamics:
+            bad = [change for change in system_changes
+                   if change not in self.supported_changes]
 
-        if self.calculator_initialized and any(bad):
-            raise PropertyNotImplementedError(
-                'Cannot change {} through IPI protocol.  '
-                'Please create new socket calculator.'
-                .format(bad if len(bad) > 1 else bad[0]))
+            if self.calculator_initialized and any(bad):
+                raise PropertyNotImplementedError(
+                    'Cannot change {} through IPI protocol.  '
+                    'Please create new socket calculator.'
+                    .format(bad if len(bad) > 1 else bad[0]))
 
-        self.calculator_initialized = True
+            self.calculator_initialized = True
 
-        if self.server is None:
-            assert self.calc is not None
-            self.calc.write_input(atoms, properties=properties,
-                                  system_changes=system_changes)
-            if not self._unixsocket:
-                self._unixsocket = self.calc.localtmp.split('/')[-1]
-            cmd = ' '.join(self.calc.command)  + ' --ipi {0}:UNIX >> {1}/pw.out'.format(self._unixsocket,self.calc.localtmp)
-            self.launch_server(cmd)
+            if self.server is None:
+                assert self.calc is not None
+                self.calc.write_input(atoms, properties=properties,
+                                      system_changes=system_changes)
+                if not self._unixsocket:
+                    self._unixsocket = self.calc.localtmp.split('/')[-1]
+                cmd = ' '.join(self.calc.command)  + ' --ipi {0}:UNIX >> {1}/pw.out'.format(self._unixsocket,self.calc.localtmp)
+                self.launch_server(cmd)
 
-        self.atoms = atoms.copy()
-        results = self.server.calculate(atoms)
-        virial = results.pop('virial')
-        if self.atoms.number_of_lattice_vectors == 3 and any(self.atoms.pbc):
-            from ase.constraints import full_3x3_to_voigt_6_stress
-            vol = atoms.get_volume()
-            results['stress'] = -full_3x3_to_voigt_6_stress(virial) / vol
-        self.results.update(results)
+            self.atoms = atoms.copy()
+            results = self.server.calculate(atoms)
+            virial = results.pop('virial')
+            if self.atoms.number_of_lattice_vectors == 3 and any(self.atoms.pbc):
+                from ase.constraints import full_3x3_to_voigt_6_stress
+                vol = atoms.get_volume()
+                results['stress'] = -full_3x3_to_voigt_6_stress(virial) / vol
+            self.results.update(results)
+        else:
+            self.calc.calculate(atoms)
     
     def todict(self):
         return Espresso.todict(self)
