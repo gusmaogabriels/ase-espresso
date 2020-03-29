@@ -1001,8 +1001,9 @@ class Espresso(FileIOCalculator, object):
                    '{} with error code {}'.format(self.name, command,
                                                   path, errorcode))
             raise CalculationFailed(msg)
+
         self.read()
-        self.read_results()
+
         self.set_results(atoms)
 
     
