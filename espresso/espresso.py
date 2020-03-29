@@ -988,7 +988,7 @@ class Espresso(FileIOCalculator, object):
             # probably the shell launches successfully.  But we soon want
             # to allow calling the subprocess directly, and then this
             # distinction (failed to launch vs failed to run) is useful.
-            msg = 'Failed to execute "{}"'.format(command)
+            msg = 'Failed to execute "{}"'.format(self.command)
             raise EnvironmentError(msg) from err
 
         errorcode = proc.wait()
