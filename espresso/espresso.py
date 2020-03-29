@@ -962,6 +962,7 @@ class Espresso(FileIOCalculator, object):
             self.logfile = open(self.log, 'ab')
             if self.site.usehostfile:
                 self.site.write_local_hostfile()
+            self.write_input()
                 
         self.command = self.site.get_proc_mpi_command(self.scratch,
                                 'pw.x ' + self.parflags + ' -in {0}/pw.inp'.format(self.localtmp))
@@ -979,9 +980,7 @@ class Espresso(FileIOCalculator, object):
                     
         if not self._initialized:
             self.initialize(atoms)
-            
-        self.write_input()
-            
+s            
         try:
             proc = subprocess.Popen(self.command, shell=True, cwd=self.localtmp)
         except OSError as err:
