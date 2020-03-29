@@ -962,7 +962,7 @@ class Espresso(FileIOCalculator, object):
             self.logfile = open(self.log, 'ab')
             if self.site.usehostfile:
                 self.site.write_local_hostfile()
-            self.write_input()
+            self.write_input(atoms)
                 
         self.command = self.site.get_proc_mpi_command(self.scratch,
                                 'pw.x ' + self.parflags + ' -in {0}/pw.inp'.format(self.localtmp))
