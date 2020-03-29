@@ -3817,7 +3817,7 @@ class iEspresso(SocketIOCalculator):
 
         if self.server is None:
             assert self.calc is not None
-            #cmd = self.calc.command.replace('PREFIX', self.calc.prefix)
+            cmd = self.calc.command#.replace('PREFIX', self.calc.prefix)
             self.calc.write_input(atoms, properties=properties,
                                   system_changes=system_changes)
             self.launch_server(cmd)
