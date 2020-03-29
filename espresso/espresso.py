@@ -879,6 +879,9 @@ class Espresso(FileIOCalculator, object):
         #self.command = 'mpirun -envall -rmk pbs pw.x -in pw.inp --ipi {unixsocket}:UNIX > pw.out'\
         #                 .format(unixsocket=self.unixsocket)
 
+        self.command = self.site.get_proc_mpi_command(self.scratch,
+                                'pw.x ' + self.parflags + ' -in pw.inp')
+        
         self.parameters = dict()
         
     @property
@@ -3817,9 +3820,7 @@ class iEspresso(SocketIOCalculator):
 
         if self.server is None:
             assert self.calc is not None
-            #cmd = self.calc.command#.replace('PREFIX', self.calc.prefix)
-            cmd = self.site.get_proc_mpi_command(self.scratch,
-                                'pw.x ' + self.parflags + ' -in pw.inp' + ' --ipi {}:UNIX > pw.out'.format(self.unixsocket))
+            cmd = self.calc.command  + ' --ipi {}:UNIX > pw.out'.format(self.unixsocket)
             self.calc.write_input(atoms, properties=properties,
                                   system_changes=system_changes)
             self.launch_server(cmd)
