@@ -980,7 +980,7 @@ class Espresso(FileIOCalculator, object):
                     
         if not self._initialized:
             self.initialize(atoms)
-s            
+            
         try:
             proc = subprocess.Popen(self.command, shell=True, cwd=self.localtmp)
         except OSError as err:
