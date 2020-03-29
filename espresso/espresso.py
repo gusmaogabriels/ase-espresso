@@ -970,7 +970,7 @@ class Espresso(FileIOCalculator, object):
 
         self.check_spinpol()
         self._initialized = True
-
+    """
     def calculate(self, atoms=None, properties=['energy']):
                     
         if not self._initialized:
@@ -999,7 +999,8 @@ class Espresso(FileIOCalculator, object):
         self.read()
         self.read_results()
         self.set_results(atoms)
-  
+    """
+    
     def set_atoms(self, atoms):
 
         if self.atoms is None or not self.started:
