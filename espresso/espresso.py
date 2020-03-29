@@ -965,7 +965,7 @@ class Espresso(FileIOCalculator, object):
                 
         self.command = self.site.get_proc_mpi_command(self.scratch,
                                 'pw.x ' + self.parflags + ' -in {0}/pw.inp >> {0}/pw.out'.format(self.localtmp))
-        self.command =  ' --allow-run-as-root pw.x '.join(self.command.split('pw.x'))
+        self.command =  [self.command[0]]+['--allow-run-as-root']+[self.command[1]]
 
         self.set_pseudo_path()
         self.atoms = atoms.copy()
