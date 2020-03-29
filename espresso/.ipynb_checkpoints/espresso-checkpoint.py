@@ -980,15 +980,17 @@ class Espresso(FileIOCalculator, object):
                     
         if not self._initialized:
             self.initialize(atoms)
-            
+        
+        command = ' '.join(self.command)
+        
         try:
-            proc = subprocess.Popen(self.command, shell=True, cwd=self.localtmp)
+            proc = subprocess.Popen(command, shell=True, cwd=self.localtmp)
         except OSError as err:
             # Actually this may never happen with shell=True, since
             # probably the shell launches successfully.  But we soon want
             # to allow calling the subprocess directly, and then this
             # distinction (failed to launch vs failed to run) is useful.
-            msg = 'Failed to execute "{}"'.format(self.command)
+            msg = 'Failed to execute "{}"'.format(command)
             raise EnvironmentError(msg) from err
 
         errorcode = proc.wait()
@@ -996,7 +998,7 @@ class Espresso(FileIOCalculator, object):
         if errorcode:
             path = os.path.abspath(self.localtmp)
             msg = ('Calculator "{}" failed with command "{}" failed in '
-                   '{} with error code {}'.format(self.name, self.command,
+                   '{} with error code {}'.format(self.name, command,
                                                   path, errorcode))
             raise CalculationFailed(msg)
         self.read()
