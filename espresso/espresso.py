@@ -1005,8 +1005,6 @@ class Espresso(FileIOCalculator, object):
         self.read()
 
         self.set_results(atoms)
-        print(self.results)
-
     
     def set_atoms(self, atoms):
 
@@ -3843,6 +3841,7 @@ class iEspresso(SocketIOCalculator):
             self.results.update(results)
         else:
             self.calc.calculate(atoms)
+            self.results.update(self.calc._results)
     
     def todict(self):
         return Espresso.todict(self)
