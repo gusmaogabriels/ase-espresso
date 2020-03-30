@@ -3679,7 +3679,7 @@ class Espresso(FileIOCalculator, object):
         if s is not None:
             dict_version['smax'] = max(np.abs(s.flatten()))
 
-        dict_version['nvalence'] = sum(self.get_nvalence()[0])def 
+        dict_version['nvalence'] = sum(self.get_nvalence()[0])
 
         dict_version['SCF-steps'] = self.get_number_of_scf_steps()
         dict_version['version'] = self.get_espresso_version()
