@@ -973,7 +973,6 @@ class Espresso(FileIOCalculator, object):
         self.atoms2species()
 
         self.check_spinpol()
-        self.write_input(atoms)
         self._initialized = True
 
     def calculate(self, atoms=None, properties=['energy']):
@@ -1384,12 +1383,12 @@ class Espresso(FileIOCalculator, object):
                     overridekpts=None, overridekptshift=None,
                     overridenbands=None, suppressforcecalc=False,
                     usetetrahedra=False, **kwarfs):
-        """
-        if self.atoms is None and atoms and not self._initialized:
-            self.initialize(atoms)
-        else:
+        
+        if self.atoms is None:
             raise ValueError('no atoms defined')
-        """            
+
+        if not self._initialized:
+            self.initialize(atoms)
 
         fname = self.localtmp.joinpath(inputname)
         
