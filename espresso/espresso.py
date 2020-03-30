@@ -1383,12 +1383,12 @@ class Espresso(FileIOCalculator, object):
                     overridekpts=None, overridekptshift=None,
                     overridenbands=None, suppressforcecalc=False,
                     usetetrahedra=False, **kwarfs):
+
+        if not self._initialized and atoms:
+            self.initialize(atoms)
         
         if self.atoms is None:
             raise ValueError('no atoms defined')
-
-        if not self._initialized:
-            self.initialize(atoms)
 
         fname = self.localtmp.joinpath(inputname)
         
