@@ -978,43 +978,30 @@ class Espresso(FileIOCalculator, object):
 
     def calculate(self, atoms=None, properties=['energy']):
                     
-        if 
-            if not self._initialized:
-                self.initialize(atoms)
 
-            command = ' '.join(self.command+['>> {}'.format(self.log)])
-
-            try:
-                proc = subprocess.Popen(command, shell=True, cwd=self.localtmp)
-            except OSError as err:
-                # Actually this may never happen with shell=True, since
-                # probably the shell launches successfully.  But we soon want
-                # to allow calling the subprocess directly, and then this
-                # distinction (failed to launch vs failed to run) is useful.
-                msg = 'Failed to execute "{}"'.format(command)
-                raise EnvironmentError(msg) from err
-
-            errorcode = proc.wait()
-
-            if errorcode:
-                path = os.path.abspath(self.localtmp)
-                msg = ('Calculator "{}" failed with command "{}" failed in '
-                       '{} with error code {}'.format(self.name, command,
-                                                      path, errorcode))
-                raise CalculationFailed(msg)
-        else:
-            
-            if atoms is not None:
-                self.atoms = atoms.copy()
-
-            # initialize
+        if not self._initialized:
             self.initialize(atoms)
 
-            # write input
-            self.write_input()
+        command = ' '.join(self.command+['>> {}'.format(self.log)])
 
-            # run
-            self.run()
+        try:
+            proc = subprocess.Popen(command, shell=True, cwd=self.localtmp)
+        except OSError as err:
+            # Actually this may never happen with shell=True, since
+            # probably the shell launches successfully.  But we soon want
+            # to allow calling the subprocess directly, and then this
+            # distinction (failed to launch vs failed to run) is useful.
+            msg = 'Failed to execute "{}"'.format(command)
+            raise EnvironmentError(msg) from err
+
+        errorcode = proc.wait()
+
+        if errorcode:
+            path = os.path.abspath(self.localtmp)
+            msg = ('Calculator "{}" failed with command "{}" failed in '
+                   '{} with error code {}'.format(self.name, command,
+                                                  path, errorcode))
+            raise CalculationFailed(msg)
 
         self.recalculate = True
 
@@ -1166,63 +1153,6 @@ class Espresso(FileIOCalculator, object):
         self._initialized = False
         self.input_update()
         self.recalculate = True
-        
-    @preserve_cwd
-    def run(self):
-        '''
-        Execute the expresso program `pw.x`
-        '''
-
-        if self.site.batchmode:
-            self.localtmp.chdir()
-            Path.copy2(self.localtmp.joinpath('pw.inp'), self.scratch)
-
-            if self.calculation != 'hund':
-
-                command = self.site.get_proc_mpi_command(self.scratch,
-                                'pw.x ' + self.parflags + ' -in pw.inp')
-
-                if self.ion_dynamics == 'ase3':
-                    raise ValueError('use interactive version <iEspresso> for ion_dynamics="ase3"')
-                else:
-                    with open(self.log, 'ab') as flog:
-                        flog.write(self.get_output_header().encode('utf-8'))
-                        exitcode = subprocess.call(command, stdout=flog)
-                    if exitcode != 0:
-                        raise RuntimeError('something went wrong:', exitcode)
-
-            else:  # calculation == 'hund'
-                self.site.runonly_perProcMpiExec(self.scratch,' pw.x -in pw.inp >>'+self.log)
-                os.system("sed s/occupations.*/occupations=\\'fixed\\',/ <"+self.localtmp+"/pw.inp | sed s/ELECTRONS/ELECTRONS\\\\n\ \ startingwfc=\\'file\\',\\\\n\ \ startingpot=\\'file\\',/ | sed s/conv_thr.*/conv_thr="+num2str(self.conv_thr)+",/ | sed s/tot_magnetization.*/tot_magnetization="+num2str(self.totmag)+",/ >"+self.localtmp+"/pw2.inp")
-                os.system(self.site.perHostMpiExec+' cp '+self.localtmp+'/pw2.inp '+self.scratch)
-                self.cinp, self.cout = self.site.do_perProcMpiExec(self.scratch,'pw.x '+self.parflags+' -in pw2.inp')
-
-        else:  # not in batchmode
-
-            pwinp = self.localtmp.joinpath('pw.inp')
-            Path.copy(pwinp, self.scratch)
-            command = ['pw.x', '-in', 'pw.inp']
-            if self.calculation != 'hund':
-                self.scratch.chdir()
-                with open(self.log, 'ab') as flog:
-                    flog.write(self.get_output_header().encode('utf-8'))
-                    exitcode = subprocess.call(command, stdout=flog)
-
-            else:
-                self.scratch.chdir()
-                subprocess.call('pw.x -in pw.inp >> ' + self.log, shell=True)
-
-                os.system("sed s/occupations.*/occupations=\\'fixed\\',/ <"+self.localtmp+"/pw.inp | sed s/ELECTRONS/ELECTRONS\\\\n\ \ startingwfc=\\'file\\',\\\\n\ \ startingpot=\\'file\\',/ | sed s/conv_thr.*/conv_thr="+num2str(self.conv_thr)+",/ | sed s/tot_magnetization.*/tot_magnetization="+num2str(self.totmag)+",/ >"+self.localtmp+"/pw2.inp")
-                shutil.copy(os.path.join(self.localtmp, 'pw2.inp'), self.scratch)
-                self.scratch.chdir()
-                self.cinp, self.cout = os.popen2('pw.x -in pw2.inp')
-
-            self._running = True
-
-    def stop(self):
-        if self._running:
-
-            self._running = False
 
 
     def clean(self):
