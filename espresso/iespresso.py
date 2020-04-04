@@ -583,7 +583,7 @@ class iEspresso(Espresso):
             self.results = {}
         if not self.dontcalcforces and all([_ not in properties for _ in ['forces','ensemble_energies']]):
             properties += ['forces']
-        if not self.calcstress and 'stress' not in properties:
+        if not self.calcstress and 'stress' in properties:
             properties += ['stress']
         self.atoms = atoms.copy()
         results = self.server.calculate(atoms,properties)
