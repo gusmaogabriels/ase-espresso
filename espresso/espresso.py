@@ -36,7 +36,6 @@ import inspect
 import pexpect
 
 from ase.calculators.calculator import FileIOCalculator
-from ase.calculators.socketio import  SocketIOCalculator
 from ase.calculators.calculator import CalculationFailed
 from ase.units import Hartree, Rydberg, Bohr
 
@@ -370,7 +369,7 @@ class Espresso(FileIOCalculator, object):
                  kptshift=(0, 0, 0),
                  fft_grid=None,
                  calculation='relax',
-                 ion_dynamics=None,#'ase3',
+                 ion_dynamics='ipi',
                  nstep=None,
                  constr_tol=None,
                  fmax=0.05,
@@ -843,7 +842,11 @@ class Espresso(FileIOCalculator, object):
             self.defaults['tot_charge'] = tot_charge
         else:
             self.defaults['tot_charge'] = charge
-
+        
+        if ion_dynamics == 'ipi':
+            self.fmax = 0.0
+        else:
+            pass
 
         # internal attributes
 
@@ -977,7 +980,6 @@ class Espresso(FileIOCalculator, object):
 
     def calculate(self, atoms=None, properties=['energy']):
                     
-
         if not self._initialized:
             self.initialize(atoms)
 
@@ -1012,7 +1014,6 @@ class Espresso(FileIOCalculator, object):
 
         self.set_results(atoms)
         
-    
     def set_atoms(self, atoms):
 
         if self.atoms is None or not self.started:
@@ -1038,7 +1039,7 @@ class Espresso(FileIOCalculator, object):
                 self.recalculate = True
         self.atoms = atoms.copy()
 
-    def update(self, atoms):
+    def update(self, atoms, properties=['energy']):
         '''
         Check if the atoms object has changes and perform a calculation
         when it does
@@ -1046,10 +1047,13 @@ class Espresso(FileIOCalculator, object):
 
         if self.atoms is None:
             self.set_atoms(atoms)
-
-        if self.calculation_required(atoms, ['energy']):
-            self.calculate(atoms)
+        print(properties)
+        if self.calculation_required(atoms, properties):
+            print('IS REQUIRED')
+            self.calculate(atoms, properties)
             self.recalculate = False
+        else:
+             print('NOT REQUIRED')
 
     def set_results(self, atoms):
         '''
@@ -1081,7 +1085,7 @@ class Espresso(FileIOCalculator, object):
     def read_results(self):
         output = io.read('pw.out')
         self.calc = output.calc
-        self.results = output.calc.results
+        self._results = output.calc.results
 
     def input_update(self):
         '''
@@ -1373,11 +1377,14 @@ class Espresso(FileIOCalculator, object):
             return int(tmp[-1].split('bfgs')[0])
 
     def get_forces(self, atoms):
-        self.update(atoms)
-        if self.newforcearray:
-            return self.forces.copy()
+        self.update(atoms,['forces'])
+        if self.server:
+            return self.results['forces']
         else:
-            return self.forces
+            if self.newforcearray:
+                return self.forces.copy()
+            else:
+                return self.forces
 
     def write_input(self, atoms=None, inputname='pw.inp', calculation=None,
                     overridekpts=None, overridekptshift=None,
@@ -1435,7 +1442,7 @@ class Espresso(FileIOCalculator, object):
                 if 'wf_collect' in list(self.output.keys()):
                     if self.output['wf_collect']:
                         print('  wf_collect=.true.,', file=finp)
-        if self.ion_dynamics != 'ase3':
+        if self.ion_dynamics != 'ase3' and self.ion_dynamics != 'ipi':
             # we basically ignore convergence of total energy differences
             # between ionic steps and only consider fmax as in ase
             print('  etot_conv_thr=1d0,', file=finp)
@@ -1731,7 +1738,7 @@ class Espresso(FileIOCalculator, object):
                 print('  {0:s}={1:s},'.format(attr, bool2str(value)), file=finp)
 
         ### &IONS ###
-        if self.ion_dynamics == 'ase3' or not ionssec:
+        if self.ion_dynamics == 'ase3' or not ionssec or self.ion_dynamics == 'ipi':
             simpleconstr, otherconstr = [], []
         else:
             simpleconstr, otherconstr = convert_constraints(self.atoms)
@@ -2335,11 +2342,13 @@ class Espresso(FileIOCalculator, object):
                              #force_consistent=True
                              ):
         self.update(atoms)
-            
-        if force_consistent or self.force_consistent:
-            return self.energy_free
-        else:
-            return self.energy_zero
+        if self.server:
+            return self.results['energy']
+        else: 
+            if force_consistent or self.force_consistent:
+                return self.energy_free
+            else:
+                return self.energy_zero
 
     def get_nonselfconsistent_energies(self, type='beefvdw'):
         #assert self.xc is 'BEEF'
@@ -2359,8 +2368,8 @@ class Espresso(FileIOCalculator, object):
 
     def get_stress(self, atoms=None):
 
-        self.update(atoms)
-        return self._results['stress']
+        self.update(atoms,['stress'])
+        return self.results['stress']
 
     def get_absolute_magnetization(self, atoms=None):
 
@@ -3793,7 +3802,7 @@ class Espresso(FileIOCalculator, object):
         id_ = db.write(mongo_doc(atoms))
         return id_
 
-
+"""
 class iEspresso(SocketIOCalculator):
 
     '''
@@ -3846,9 +3855,13 @@ class iEspresso(SocketIOCalculator):
             results['stress'] = -full_3x3_to_voigt_6_stress(virial) / vol
         self.results.update(results)
     
+    #def get_ensemble_energies(self):
+    #    # Bypassing the standard ASE atoms and calculator for ASE folks
+    #    # opted not to include get_ensemble_energies as a default method
+        
+        
     def todict(self):
         return Espresso.todict(self)
-
-
+"""
 espresso = Espresso
-iespresso = iEspresso
+#iespresso = iEspresso
