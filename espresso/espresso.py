@@ -1047,13 +1047,9 @@ class Espresso(FileIOCalculator, object):
 
         if self.atoms is None:
             self.set_atoms(atoms)
-        print(properties)
         if self.calculation_required(atoms, properties):
-            print('IS REQUIRED')
             self.calculate(atoms, properties)
             self.recalculate = False
-        else:
-             print('NOT REQUIRED')
 
     def set_results(self, atoms):
         '''
