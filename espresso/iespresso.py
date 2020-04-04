@@ -607,13 +607,14 @@ class iEspresso(Espresso):
 
     def __exit__(self, type, value, traceback):
         self.close()
-
+    """
     def todict(self):
         d = {'type': 'calculator',
              'name': 'socket-driver'}
         if self.calc is not None:
             d['calc'] = self.calc.todict()
         return d
+    """
 
     def get_ensemble_energies(self):
         # Bypassing the standard ASE atoms and calculator for ASE folks
