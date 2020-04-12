@@ -143,7 +143,7 @@ class IPIProtocol:
         return a
 
     def sendposdata(self, cell, icell, positions, properties):
-        if self.firstrun or 'stress' in properties:
+        if self.firstrun or 'cell' in properties:
             assert cell.size == 9
             assert icell.size == 9
         assert positions.size % 3 == 0
@@ -152,7 +152,7 @@ class IPIProtocol:
         self.sendmsg('POSDATA')
         if 'ensemble_energies' in properties:
             self.log(' genensemble')
-        if self.firstrun or 'stress' in properties:
+        if self.firstrun or 'cell' in properties:
             self.send(cell.T / units.Bohr, np.float64)
             self.send(icell.T * units.Bohr, np.float64)
         self.send(len(positions), np.int32)
@@ -249,7 +249,7 @@ class IPIProtocol:
         ### by Gabriel S. Gusmao : gusmaogabriels@gmail.com
         binstring = ''.join(['1' if _ in properties else '0' for _ in\
                              ['energy', 'forces', 'stress', 'cell', 'ensemble_energies']])
-        hotint = int(binstring,2)
+        hotint = int(binstring,2)+1 # adding one to make it ASE compliant
         self.send(hotint, np.int32)  # action enconded integer
         ### ENDOFHACK
         # We send one byte, which is zero, since things may not work
@@ -259,7 +259,7 @@ class IPIProtocol:
         self.send(np.zeros(1), np.byte)  # initialization string
 
     def ionic_step(self, positions, cell, properties):
-        if self.firstrun or 'stress' in properties:
+        if self.firstrun or 'cell' in properties:
             icell = np.linalg.pinv(cell).transpose()
         else:
             icell = None
@@ -587,11 +587,14 @@ class iEspresso(Espresso):
             properties += ['stress']
         self.atoms = atoms.copy()
         results = self.server.calculate(atoms,properties)
+        
         if 'virial' in results.keys():
             if self.atoms.number_of_lattice_vectors == 3 and any(self.atoms.pbc):
                 from ase.constraints import full_3x3_to_voigt_6_stress
                 vol = atoms.get_volume()
                 results['stress'] = -full_3x3_to_voigt_6_stress(results['virial']) / vol
+            else:
+                raise Exception('Stress calculation: cell and periodic boundary conditions must be defined.')
         self.results.update(results)
     
     def close(self):

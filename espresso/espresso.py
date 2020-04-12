@@ -2362,7 +2362,7 @@ class Espresso(FileIOCalculator, object):
     def get_xc_functional(self):
         return self.xc
 
-    def get_stress(self, atoms=None):
+    def get_stresses(self, atoms=None):
 
         self.update(atoms,['stress'])
         return self.results['stress']
