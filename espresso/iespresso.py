@@ -544,6 +544,8 @@ class iEspresso(Espresso):
     def launch_server(self, cmd=None, properties=['energy']):
         if not isinstance(self.directory,str):
             cwd = self.directory.joinpath('')
+        else:
+            cwd = self.directory
         self.server = SocketServer(client_command=cmd, port=self._port,
                                    unixsocket=self._unixsocket,
                                    timeout=self.timeout, log=self.socket_log,
