@@ -547,6 +547,29 @@ class iEspresso(Espresso):
                                    timeout=self.timeout, log=self.socket_log,
                                    cwd=self.directory.joinpath(''))
 
+    def update(self, atoms, properties=['energy']):
+        '''
+        Check if the atoms object has changes and perform a calculation
+        when it does
+        '''
+        from ase.calculators.calculator import compare_atoms
+
+        if 'positions' in self.check_state(atoms):
+            self.results = {}
+            if 'energy' not in properties:
+               properties += ['energy']
+        if not self.dontcalcforces and all([_ not in properties for _ in ['forces','ensemble_energies']]):
+            properties += ['forces']
+        if not self.calcstress and 'stress' in properties:
+            properties += ['stress']
+        self.atoms = atoms.copy()
+ 
+        if self.atoms is None:
+            self.set_atoms(atoms)
+        if self.calculation_required(atoms, properties):
+            self.calculate(atoms, properties)
+            self.recalculate = False
+
     def calculate(self, atoms=None, properties=['energy'],
                   system_changes=all_changes):
         
@@ -563,11 +586,6 @@ class iEspresso(Espresso):
 
         if self.server is None:
             self.calculation = 'scf'
-            #self.dontcalcforces = True
-            #if 'stress' in properties:
-            #    self.calcstress=True
-            #if 'forces' in properties:
-            #    self.calculation = 'relax'
             self.cell_dynamics = 'ipi'
             self.ion_dynamics = 'ipi'
             self.dontcalcforces = False
@@ -579,13 +597,6 @@ class iEspresso(Espresso):
             cmd = ' '.join(self.command)  + ' --ipi {0}:UNIX >> {1}'.format(self._unixsocket,self.log)
             self.launch_server(cmd)
 
-        if 'positions' in self.check_state(atoms):
-            self.results = {}
-        if not self.dontcalcforces and all([_ not in properties for _ in ['forces','ensemble_energies']]):
-            properties += ['forces']
-        if not self.calcstress and 'stress' in properties:
-            properties += ['stress']
-        self.atoms = atoms.copy()
         results = self.server.calculate(atoms,properties)
         
         if 'virial' in results.keys():
