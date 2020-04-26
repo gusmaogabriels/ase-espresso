@@ -2340,7 +2340,9 @@ class Espresso(FileIOCalculator, object):
         self.update(atoms)
         if self.server:
             return self.results['energy']
-        else: 
+        else:
+            if not self.energy_zero or not self.energy_free:
+                self.read_energies()
             if force_consistent or self.force_consistent:
                 return self.energy_free
             else:

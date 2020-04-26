@@ -74,6 +74,10 @@ class SocketClosed(OSError):
 
 from .espresso import Espresso
 
+def get_ip_address():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    return s.getsockname()[0]
 
 class IPIProtocol:
     """Communication using IPI protocol."""
@@ -247,8 +251,10 @@ class IPIProtocol:
         self.send(0, np.int32)  # 'bead index' always zero for now
         ### Here is a very hacky external controler for QE
         ### by Gabriel S. Gusmao : gusmaogabriels@gmail.com
+        
         binstring = ''.join(['1' if _ in properties else '0' for _ in\
                              ['energy', 'forces', 'stress', 'cell', 'ensemble_energies']])
+        
         hotint = int(binstring,2)+1 # adding one to make it ASE compliant
         self.send(hotint, np.int32)  # action enconded integer
         ### ENDOFHACK
@@ -288,8 +294,8 @@ class SocketServer:
     default_port = 31415
 
     def __init__(self, client_command=None, port=None,
-                 unixsocket=None, timeout=None, cwd=None, log=None, 
-                 properties=['energy']):
+                 unixsocket=None, timeout=None, cwd=None, 
+                 log=None,properties=['energy']):
         """Create server and listen for connections.
 
         Parameters:
@@ -324,7 +330,7 @@ class SocketServer:
         self._created_socket_file = None  # file to be unlinked in close()
 
         if unixsocket is not None:
-            self.serversocket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            self.serversocket = socket.socket(socket.AF_UNIX)
             actualsocket = actualunixsocketname(unixsocket)
             try:
                 self.serversocket.bind(actualsocket)
@@ -333,11 +339,14 @@ class SocketServer:
             self._created_socket_file = actualsocket
             conn_name = 'UNIX-socket {}'.format(actualsocket)
         else:
-            self.serversocket = socket.socket(socket.AF_INET)
+            self.serversocket = socket.socket(socket.AF_INET,  socket.SOCK_STREAM)
             self.serversocket.setsockopt(socket.SOL_SOCKET,
                                          socket.SO_REUSEADDR, 1)
             self.serversocket.bind(('', port))
             conn_name = 'INET port {}'.format(port)
+            if log:
+                print(conn_name, get_ip_address(),file=log)
+                print('SOCKET',self._created_socket_file,socket.gethostname(),id(self),file=log)
 
         if log:
             print('Accepting clients on {}'.format(conn_name), file=log)
@@ -360,9 +369,11 @@ class SocketServer:
                                                    unixsocket=unixsocket)
             if log:
                 print('Launch subprocess: {}'.format(client_command), file=log)
+            print('CMD',client_command)
             self.proc = Popen(client_command, shell=True,
                               cwd=self.cwd)
             # self._accept(process_args)
+            #self._accept()
 
     def _accept(self, client_command=None):
         """Wait for client and establish connection."""
@@ -370,7 +381,7 @@ class SocketServer:
         log = self.log
         if self.log:
             print('Awaiting client', file=self.log)
-
+        print(id(self),'Awaiting client')
         # If we launched the subprocess, the process may crash.
         # We want to detect this, using loop with timeouts, and
         # raise an error rather than blocking forever.
@@ -380,6 +391,7 @@ class SocketServer:
         while True:
             try:
                 self.clientsocket, self.address = self.serversocket.accept()
+                print('-'*10+'>',self.clientsocket, self.address)
             except socket.timeout:
                 if self.proc is not None:
                     status = self.proc.poll()
@@ -451,8 +463,9 @@ class iEspresso(Espresso):
 
     ## -> remastered from SocketIOCalculator
 
-    def __init__(self, atoms, port=None,
-                 unixsocket=None, timeout=None, log=None,*args, **kwargs):
+    def __init__(self, atoms, port=None, socket_type='UNIX',
+                 unixsocket=None, timeout=None, log=None, head_node_ip=None,
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
         """Initialize socket I/O calculator.
 
@@ -521,14 +534,16 @@ class iEspresso(Espresso):
         # They may both be None as stored here.
         self._port = port
         self._unixsocket = unixsocket
+        self._socket_type = socket_type
         
         # First time calculate() is called, system_changes will be
         # all_changes.  After that, only positions and cell may change.
         self.calculator_initialized = False
+        self.head_node_ip = head_node_ip
         self.atoms = atoms.copy()
         atoms.calc = self 
         atoms.get_ensemble_energies = self.get_ensemble_energies
-        self.initialize(atoms)
+        
     '''
     Interactive Quantum Espresso calculator that requires a
     version of the QE binary that supports feeding new coordinates
@@ -546,8 +561,9 @@ class iEspresso(Espresso):
             cwd = self.directory.joinpath('')
         else:
             cwd = self.directory
-        self.server = SocketServer(client_command=cmd, port=self._port,
+        self.server = SocketServer(client_command=cmd,
                                    unixsocket=self._unixsocket,
+                                   port=self._port,
                                    timeout=self.timeout, log=self.socket_log,
                                    cwd=cwd)
 
@@ -561,7 +577,7 @@ class iEspresso(Espresso):
         if 'positions' in self.check_state(atoms):
             self.results = {}
             if 'energy' not in properties:
-               properties += ['energy']
+                properties += ['energy']
         if not self.dontcalcforces and all([_ not in properties for _ in ['forces','ensemble_energies']]):
             properties += ['forces']
         if not self.calcstress and 'stress' in properties:
@@ -596,9 +612,26 @@ class iEspresso(Espresso):
                     
             self.write_input(atoms, properties=properties,
                                   system_changes=system_changes)
-            if not self._unixsocket:
-                self._unixsocket = self.scratch.split('/')[-1]
-            cmd = ' '.join(self.command)  + ' --ipi {0}:UNIX >> {1}'.format(self._unixsocket,self.log)
+            
+            if self._socket_type=='UNIX' or ((not self._unixsocket and not self._port) and self._socket_type!='INET'):
+                self._socket_type = 'UNIX'
+                if not self._unixsocket:
+                    self._unixsocket = self.scratch.split('/')[-1]
+                socket_string = ' --ipi {0}:UNIX >> {1}'.format(self._unixsocket,self.log)
+            elif self._socket_type=='INET' or (not self._unixsocket and self._port):
+                self._socket_type = 'INET'
+                port = SocketServer.default_port
+                SocketServer.default_port += 1
+                while socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect_ex(('localhost', port)) == 0:
+                    port += 1
+                self._port = port
+                socket_string = ' --ipi {0}:{1} >> {2}'.format(self.head_node_ip,self._port,self.log)
+            else:
+                raise Exception('Socket type: {} not implemented.'.format(self._socket_type))
+            if self.socket_log:
+                print(self._socket_type,file=self.socket_log)
+            cmd = ' '.join(self.command) + socket_string
+
             self.launch_server(cmd)
 
         results = self.server.calculate(atoms,properties)
@@ -618,7 +651,10 @@ class iEspresso(Espresso):
             self.server = None
             self.calculator_initialized = False
             if self.socket_log_was_opened:
-                self.log.close()
+                try:
+                    self.log.close()
+                except:
+                    pass
 
     def __enter__(self):
         return self

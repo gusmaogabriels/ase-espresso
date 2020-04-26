@@ -205,7 +205,6 @@ class SiteConfig(with_metaclass(Singleton, object)):
         Set the attributes necessary to run the job based on the
         enviromental variables associated with PBS/TORQUE scheduler
         '''
-
         self.scheduler = 'pbs'
         self.batchmode = True
 
@@ -220,6 +219,12 @@ class SiteConfig(with_metaclass(Singleton, object)):
 
         self.nprocs = len(self.hosts)
         uniqnodes = sorted(set(self.hosts))
+
+        self.tpn = int(os.getenv('PBS_NUM_PPN').split('(')[0])
+
+        self.proclist = self.hosts
+ 
+        self.nprocs = len(self.proclist)
 
         self.perHostMpiExec = ['mpirun', '-host', ','.join(uniqnodes),
                                '-np', '{0:d}'.format(len(uniqnodes))]
