@@ -464,7 +464,7 @@ class iEspresso(Espresso):
     ## -> remastered from SocketIOCalculator
 
     def __init__(self, atoms, port=None, socket_type='UNIX',
-                 unixsocket=None, timeout=None, log=None, head_node_ip=None,
+                 unixsocket=None, timeout=None, log=None, ionode_address=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         """Initialize socket I/O calculator.
@@ -539,7 +539,7 @@ class iEspresso(Espresso):
         # First time calculate() is called, system_changes will be
         # all_changes.  After that, only positions and cell may change.
         self.calculator_initialized = False
-        self.head_node_ip = head_node_ip
+        self.ionode_address = ionode_address
         self.atoms = atoms.copy()
         atoms.calc = self 
         atoms.get_ensemble_energies = self.get_ensemble_energies
@@ -625,7 +625,13 @@ class iEspresso(Espresso):
                 while socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect_ex(('localhost', port)) == 0:
                     port += 1
                 self._port = port
-                socket_string = ' --ipi {0}:{1} >> {2}'.format(self.head_node_ip,self._port,self.log)
+                if re.match('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', self.ionode_address):
+                    self._ip = self.ionode_address
+                elif self.ionode_address in self.site.nic_inet_ips.keys():
+                    self._ip = self.site.nic_inet_ips[self.ionode_address]
+                else:
+                    raise Exception('Not a valida IPV4 address or NIC interface: {}'.format(self.ionode_address))
+                socket_string = ' --ipi {0}:{1} >> {2}'.format(self._ip,self._port,self.log)
             else:
                 raise Exception('Socket type: {} not implemented.'.format(self._socket_type))
             if self.socket_log:

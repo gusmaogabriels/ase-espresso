@@ -21,6 +21,7 @@ from subprocess import call
 
 from six import with_metaclass
 import hostlist as hl
+import psutil as ps
 from path import Path
 
 __version__ = '0.3.3'
@@ -101,6 +102,8 @@ class SiteConfig(with_metaclass(Singleton, object)):
         self.nprocs = None
         self.proclist = None
         self.tpn = None
+        nic_addrs = ps.net_if_addrs()
+        self.nic_inet_ips = {_ : nic_addrs[_][0].address for _ in nic_addrs.keys()}
 
         self.set_variables()
 
