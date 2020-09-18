@@ -574,13 +574,16 @@ class iEspresso(Espresso):
         '''
         from ase.calculators.calculator import compare_atoms
 
-        if 'positions' in self.check_state(atoms):
+        state = self.check_state(atoms)
+        if any([_ in state for _ in ['positions','cell']]):
             self.results = {}
-            if 'energy' not in properties:
+            if 'energy' in state and 'energy' not in properties:
                 properties += ['energy']
+            if 'cell' in state and 'cell' not in properties:
+                properties += ['cell']
         if not self.dontcalcforces and all([_ not in properties for _ in ['forces','ensemble_energies']]):
             properties += ['forces']
-        if not self.calcstress and 'stress' in properties:
+        if 'stress'in state and 'stress' not in properties:
             properties += ['stress']
         self.atoms = atoms.copy()
  
@@ -605,7 +608,9 @@ class iEspresso(Espresso):
         self.calculator_initialized = True
 
         if self.server is None:
-            self.calculation = 'scf'
+            #if 'vc' in self.calculation:
+            #    self.cell_factor = 10
+            #self.calculation = 'scf'
             self.cell_dynamics = 'ipi'
             self.ion_dynamics = 'ipi'
             self.dontcalcforces = False

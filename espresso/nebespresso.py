@@ -43,12 +43,13 @@ class NEBEspresso(NEB):
 
     def __init__(self, images, site=None, outprefix='neb', **neb_kwargs):
 
-        super().__init__(images, **neb_kwargs)
+        super().__init__(images,**neb_kwargs)
 
         self.site = site
         self.outprefix = outprefix
         self.jobs = []
         self.initialize()
+        self.__hasservers__ = False
 
     @property
     def site(self):
@@ -63,14 +64,14 @@ class NEBEspresso(NEB):
         else:
             self._site = value
 
-    def wait_for_total_energies(self):
+    def wait_for_total_energies(self,properties=['energy','forces'],system_changes=['positions']):
         '''
-        Calculalte the energy for each thread in a separate theead and
-        wait until all the calcualtions are finished.
+        Calculate the energy for each thread in a separate thread and
+        wait until all the calculations are finished.
         '''
-
         threads = [threading.Thread(target=self.images[i]._calc.calculate,
-                                    args=(self.images[i],))
+                                    args=(self.images[i],),
+                                    kwargs={'properties':properties,'system_changes':system_changes})
                    for i in range(1, self.nimages - 1)]
 
         for t in threads:
@@ -78,8 +79,13 @@ class NEBEspresso(NEB):
         for t in threads:
             t.join()
 
+
     def get_forces(self):
 
+        #if not self.__hasservers__:
+        #    [image._calc.calculate(image,properties=[],system_changes=[]) for image in self.images[1:-1]]
+        #    self.__hasservers__ = True
+        #    self.wait_for_total_energies(properties=[],system_changes=[])
         self.wait_for_total_energies()
         return super().get_forces()
 
@@ -87,6 +93,7 @@ class NEBEspresso(NEB):
         'Create the calculator instances'
 
         imageprocs = splitinto(self.site.proclist, len(self.images) - 2)
+
         images = self.images[1:self.nimages - 1]
 
         for i, (image, procs) in enumerate(zip(images, imageprocs)):
@@ -99,3 +106,6 @@ class NEBEspresso(NEB):
 
             image._calc.set(outdir='{0:s}_{1:04d}'.format(self.outprefix, i),
                             site=site)
+        
+        
+        
