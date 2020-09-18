@@ -185,13 +185,13 @@ class IPIProtocol:
             results += [(units.Ha / units.Bohr) * forces]
         else:
             forces = None
-            results += [None]#[np.zeros((int(natoms), 3))]
+            results += []#[np.zeros((int(natoms), 3))]
         if 'stress' in properties:
             virial = self.recv((3, 3), np.float64).T.copy()
             results += [units.Ha * virial]
         else:
             virial = None
-            results += [None]#[np.zeros((3, 3))]
+            results += []#[np.zeros((3, 3))]
         if 'ensemble_energies' in properties:
             energies = self.recv((2000,1), np.float64)
             beefxc = self.recv((32,1), np.float64)
@@ -205,7 +205,8 @@ class IPIProtocol:
             morebytes = self.recv(nmorebytes, np.byte)
         else:
             morebytes = b''
-        return results+[energies, beefxc, morebytes]
+        self.morebytes = morebytes
+        return results+[energies, beefxc]
 
     def sendforce(self, energy, forces, virial,
                   morebytes=np.zeros(1, dtype=np.byte)):
@@ -273,8 +274,8 @@ class IPIProtocol:
         msg = self.status()
         assert msg == 'HAVEDATA', msg
         res = self.sendrecv_force(properties)
-        r = dict(filter(lambda _ : np.any(_[1]) ,\
-                  zip(['energy','forces','virial','ensemble_energies','morebytes'],res)))    
+        r = dict(filter(lambda _ : np.any(np.isfinite(_[1])) ,\
+                  zip(['energy','forces','virial','ensemble_energies'],res)))
         return r
 
     def calculate(self, positions, cell, properties):
@@ -581,10 +582,8 @@ class iEspresso(Espresso):
                 properties += ['energy']
             if 'cell' in state and 'cell' not in properties:
                 properties += ['cell']
-        if not self.dontcalcforces and all([_ not in properties for _ in ['forces','ensemble_energies']]):
+        if all([_ not in properties for _ in ['forces','ensemble_energies']]):
             properties += ['forces']
-        if 'stress'in state and 'stress' not in properties:
-            properties += ['stress']
         self.atoms = atoms.copy()
  
         if self.atoms is None:
