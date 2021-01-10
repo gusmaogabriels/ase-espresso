@@ -185,19 +185,19 @@ class IPIProtocol:
             results += [(units.Ha / units.Bohr) * forces]
         else:
             forces = None
-            results += []#[np.zeros((int(natoms), 3))]
+            results += [None]#[np.zeros((int(natoms), 3))]
         if 'stress' in properties:
             virial = self.recv((3, 3), np.float64).T.copy()
             results += [units.Ha * virial]
         else:
             virial = None
-            results += []#[np.zeros((3, 3))]
+            results += [None]#[np.zeros((3, 3))]
         if 'ensemble_energies' in properties:
             energies = self.recv((2000,1), np.float64)
             beefxc = self.recv((32,1), np.float64)
+            results += [[energies,beefxc]]
         else:
-            energies = []
-            beefxc = [] 
+            results += [None]
         nmorebytes = self.recv(1, np.int32)
         nmorebytes = int(nmorebytes)
         if nmorebytes > 0:
@@ -206,7 +206,7 @@ class IPIProtocol:
         else:
             morebytes = b''
         self.morebytes = morebytes
-        return results+[energies, beefxc]
+        return results
 
     def sendforce(self, energy, forces, virial,
                   morebytes=np.zeros(1, dtype=np.byte)):
@@ -274,7 +274,7 @@ class IPIProtocol:
         msg = self.status()
         assert msg == 'HAVEDATA', msg
         res = self.sendrecv_force(properties)
-        r = dict(filter(lambda _ : np.any(np.isfinite(_[1])) ,\
+        r = dict(filter(lambda _ : id(_[1])!=id(None) ,\
                   zip(['energy','forces','virial','ensemble_energies'],res)))
         return r
 
@@ -574,7 +574,7 @@ class iEspresso(Espresso):
         when it does
         '''
         from ase.calculators.calculator import compare_atoms
-
+        
         state = self.check_state(atoms)
         if any([_ in state for _ in ['positions','cell']]):
             self.results = {}
@@ -643,7 +643,6 @@ class iEspresso(Espresso):
             cmd = ' '.join(self.command) + socket_string
 
             self.launch_server(cmd)
-
         results = self.server.calculate(atoms,properties)
         
         if 'virial' in results.keys():
